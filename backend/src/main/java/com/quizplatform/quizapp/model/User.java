@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class User {
     @Id
     private String id;
-
     private String username;
     private String password;
     private String role; // e.g., "ADMIN" or "STUDENT"

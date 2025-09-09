@@ -4,6 +4,8 @@ import com.quizplatform.quizapp.model.Result;
 import com.quizplatform.quizapp.model.User;
 import com.quizplatform.quizapp.repository.ResultRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
@@ -16,32 +18,31 @@ public class ResultController {
     private ResultRepository resultRepository;
 
     @PostMapping("/submit")
-    public String submitResult(@RequestBody Result result, HttpSession session) {
+    public ResponseEntity<String> submitResult(@RequestBody Result result, HttpSession session) {
         User user = (User) session.getAttribute("user");
-        if (user == null) return "Login required";
-
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login required");
+        }
         result.setUserId(user.getId());
         resultRepository.save(result);
-        return "Result submitted successfully";
+        return ResponseEntity.ok("Result submitted successfully");
     }
 
     @GetMapping("/my-results")
-    public List<Result> getMyResults(HttpSession session) {
+    public ResponseEntity<List<Result>> getMyResults(HttpSession session) {
         User user = (User) session.getAttribute("user");
-        if (user == null) return null;
-
-        return resultRepository.findByUserId(user.getId());
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(resultRepository.findByUserId(user.getId()));
     }
 
     @GetMapping("/all")
-    public List<Result> getAllResults(HttpSession session) {
+    public ResponseEntity<List<Result>> getAllResults(HttpSession session) {
         User user = (User) session.getAttribute("user");
-        if (user == null) return null;
-
-        if ("ADMIN".equals(user.getRole())) {
-            return resultRepository.findAll();
-        } else {
-            return null;
+        if (user == null || !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        return ResponseEntity.ok(resultRepository.findAll());
     }
 }

@@ -3,6 +3,7 @@ package com.quizplatform.quizapp.service;
 import com.quizplatform.quizapp.model.User;
 import com.quizplatform.quizapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -11,25 +12,26 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    // Register a new user
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
     public String registerUser(User user) {
         if (userRepository.findByUsername(user.getUsername()) != null) {
             return "User already exists";
         }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
         return "User registered successfully";
     }
 
-    // Login a user
     public User loginUser(String username, String password) {
         User existing = userRepository.findByUsername(username);
-        if (existing != null && existing.getPassword().equals(password)) {
+        if (existing != null && passwordEncoder.matches(password, existing.getPassword())) {
             return existing;
         }
         return null;
     }
 
-    // Find user by username
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
     }

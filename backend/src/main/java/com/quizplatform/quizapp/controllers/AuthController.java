@@ -1,8 +1,10 @@
 package com.quizplatform.quizapp.controllers;
 
 import com.quizplatform.quizapp.model.User;
-import com.quizplatform.quizapp.repository.UserRepository;
+import com.quizplatform.quizapp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 
@@ -11,30 +13,39 @@ import jakarta.servlet.http.HttpSession;
 public class AuthController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @PostMapping("/register")
-    public String register(@RequestBody User user) {
-        if (userRepository.findByUsername(user.getUsername()) != null) {
-            return "User already exists";
+    public ResponseEntity<String> register(@RequestBody User user) {
+        String message = userService.registerUser(user);
+        if (message.equals("User registered successfully")) {
+            return ResponseEntity.ok(message);
         }
-        userRepository.save(user);
-        return "User registered successfully";
+        return ResponseEntity.badRequest().body(message);
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody User user, HttpSession session) {
-        User existing = userRepository.findByUsername(user.getUsername());
-        if (existing != null && existing.getPassword().equals(user.getPassword())) {
+    public ResponseEntity<User> login(@RequestBody User user, HttpSession session) {
+        User existing = userService.loginUser(user.getUsername(), user.getPassword());
+        if (existing != null) {
             session.setAttribute("user", existing);
-            return "Login successful";
+            return ResponseEntity.ok(existing);
         }
-        return "Invalid credentials";
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
     }
 
     @PostMapping("/logout")
-    public String logout(HttpSession session) {
+    public ResponseEntity<String> logout(HttpSession session) {
         session.invalidate();
-        return "Logged out successfully";
+        return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @GetMapping("/current")
+    public ResponseEntity<User> getCurrentUser(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 }

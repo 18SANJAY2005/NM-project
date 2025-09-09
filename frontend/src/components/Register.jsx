@@ -1,43 +1,69 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/api";
+import React, { useState, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import Navbar from './Navbar';
 
-export default function Register() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+const Register = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('STUDENT');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      const res = await api.post("/auth/register", { username, password });
-      alert(res.data);
-      if (res.data === "User registered successfully") navigate("/login");
+      const response = await api.post('/api/auth/register', { username, password, role });
+      if (response.status === 200) {
+        navigate('/login');
+      }
     } catch (err) {
-      console.error(err);
-      alert("Registration failed");
+      setError(err.response?.data || 'Error registering user');
     }
-  };
+  }, [username, password, role, navigate]);
 
   return (
     <div>
-      <h2>Register</h2>
-      <form onSubmit={handleRegister}>
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Register</button>
-      </form>
+      <Navbar />
+      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
+        <h2 className="text-2xl mb-4">Register</h2>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full mb-4 p-2 border rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full mb-4 p-2 border rounded"
+            required
+          />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full mb-4 p-2 border rounded"
+          >
+            <option value="STUDENT">Student</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+          <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
+            Register
+          </button>
+        </form>
+        <p className="mt-4">
+          Already have an account? <Link to="/login" className="text-blue-500">Login</Link>
+        </p>
+      </div>
     </div>
   );
-}
+};
+
+export default Register;
